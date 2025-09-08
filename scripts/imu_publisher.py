@@ -9,10 +9,12 @@ from geometry_msgs.msg import Vector3Stamped
 
 # CONFIGURATION
 ARDUINO_PORT = '/dev/ttyACM0'
-ARDUINO_BAUDRATE = 230400
 
 READ_ACC = True
-READ_GYRO = True  
+READ_GYRO = True
+
+if READ_ACC and READ_GYRO: ARDUINO_BAUDRATE = 500000
+else: ARDUINO_BAUDRATE = 230400
 
 FLOAT_SIZE = 4
 HEADER_SIZE = 1   # sync byte 0xAA
