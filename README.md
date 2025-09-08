@@ -21,7 +21,10 @@ The goal is to provide a lightweight bridge between the MPU-9250 IMU and ROS, en
 
 ## Usage
 1. Flash the Arduino sketch (`arduino/`) to your board.  
-2. Launch the Python ROS node:  
+2. Launch the Python ROS node:
+   ```bash
+   python3 imu_publisher.py
+   ```
    ```bash
    rosrun mpu9250_serial2ros imu_publisher.py
    ```
