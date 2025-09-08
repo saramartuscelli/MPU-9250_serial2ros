@@ -1,3 +1,12 @@
+/* 
+HARDWARE SET-UP (I2C PROTOCOL)
+
+VCC --> 3.3V
+GND --> GND
+SCL --> pin A5
+SDA --> pin A4
+*/
+
 #include <Wire.h>
 
 #define MPU9250_ADDR   0x68     // standard I2C address 
