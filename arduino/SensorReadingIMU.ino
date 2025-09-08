@@ -16,6 +16,13 @@ bool readGyro = false;
 bool startStreaming = false;
 unsigned long timestamp = 0;
 
+float ax;
+float ay;
+float az;
+float gx;
+float gy;
+float gz;
+
 
 void setup() {
 
@@ -61,9 +68,9 @@ void loop() {
       readBytes(ACCEL_XOUT_H, 6, accel);
 
       // Accelerometer ±2g → 16384 LSB/g
-      float ax = convertBytes(accel[0], accel[1], 16384.0);
-      float ay = convertBytes(accel[2], accel[3], 16384.0);
-      float az = convertBytes(accel[4], accel[5], 16384.0);
+      ax = convertBytes(accel[0], accel[1], 2.0);
+      ay = convertBytes(accel[2], accel[3], 2.0);
+      az = convertBytes(accel[4], accel[5], 2.0);
     }
 
     if (readGyro) {
@@ -71,9 +78,9 @@ void loop() {
       readBytes(GYRO_XOUT_H, 6, gyro);
 
       // Gyroscope ±250 dps → 131 LSB/(°/s)
-      float gx = convertBytes(gyro[0], gyro[1], 131.0);
-      float gy = convertBytes(gyro[2], gyro[3], 131.0);
-      float gz = convertBytes(gyro[4], gyro[5], 131.0);
+      gx = convertBytes(gyro[0], gyro[1], 250.0);
+      gy = convertBytes(gyro[2], gyro[3], 250.0);
+      gz = convertBytes(gyro[4], gyro[5], 250.0);
     }
 
     // Serial communication
@@ -117,7 +124,7 @@ void readBytes(uint8_t startReg, uint8_t count, uint8_t *dest) {
 }
 
 
-float convertBytes(uint8_t high, uint8_t low, float scale) {
+float convertBytes(uint8_t high, uint8_t low, float fsr) {
   int16_t value = (int16_t)((high << 8) | low);  
-  return (float)value / scale;
+  return - (float)value * fsr / float(0x8000);
 }
