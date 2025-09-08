@@ -11,7 +11,7 @@ from geometry_msgs.msg import Vector3Stamped
 ARDUINO_PORT = '/dev/ttyACM0'
 
 READ_ACC = True
-READ_GYRO = True
+READ_GYRO = False
 
 if READ_ACC and READ_GYRO: ARDUINO_BAUDRATE = 500000
 else: ARDUINO_BAUDRATE = 230400
