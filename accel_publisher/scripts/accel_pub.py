@@ -6,65 +6,95 @@ import struct
 import rospy
 from geometry_msgs.msg import Vector3Stamped
 
-# global variables for time management
-t0_sensor = None
-t0_ros = None
 
-# variables for serial communication
+# CONFIGURATION
 ARDUINO_PORT = '/dev/ttyACM0'
 ARDUINO_BAUDRATE = 230400
-DATA_NUM = 3    # 3-axis accelerometer
-FLOAT_SIZE = 4  # floats byte number
-DATA_SIZE = (DATA_NUM * FLOAT_SIZE) + 4
+
+READ_ACC = True
+READ_GYRO = True  
+
+FLOAT_SIZE = 4
+HEADER_SIZE = 1   # sync byte 0xAA
+TIME_SIZE = 4     # micros()
+
+DATA_NUM = 0
+if READ_ACC:
+    DATA_NUM += 3
+if READ_GYRO:
+    DATA_NUM += 3
+
+DATA_SIZE = (DATA_NUM * FLOAT_SIZE) + TIME_SIZE
 fmt = f'={DATA_NUM}fL'
 
 
+# TIME SYNC
+t0_sensor = None
+t0_ros = None
+
 def convert_timestamp(micros):
-    """Converts arduino micros() in rospy.Time."""
+    """Converts Arduino micros() in rospy.Time."""
     global t0_sensor, t0_ros
     if t0_sensor is None:
         t0_sensor = micros
         t0_ros = rospy.Time.now()
-    # compute time passed from the beginning of the acquisition in seconds
     dt = (micros - t0_sensor) * 1e-6
     return t0_ros + rospy.Duration.from_sec(dt)
 
 
+# MAIN
 def main():
-    rospy.init_node("accelerometer_publisher", anonymous=True)
-    pub = rospy.Publisher("/accelerometer/data", Vector3Stamped, queue_size=10)
-    # rate = rospy.Rate(100)  # force the frequency to 100 Hz
+    rospy.init_node("imu_publisher", anonymous=True)
 
-    # input("> Press Enter to start acquisition...")
+    pub_acc = None
+    pub_gyro = None
+
+    if READ_ACC:
+        pub_acc = rospy.Publisher("/accelerometer/data", Vector3Stamped, queue_size=10)
+    if READ_GYRO:
+        pub_gyro = rospy.Publisher("/gyroscope/data", Vector3Stamped, queue_size=10)
+
     arduino.write(b'S')
     print("Reading data from serial port... Press CTRL+C to stop.")
 
-
     while not rospy.is_shutdown():
         try:
-            sync = arduino.read(1)
+            sync = arduino.read(HEADER_SIZE)
             if sync != b'\xAA':
                 continue
 
             raw = arduino.read(DATA_SIZE)
+            if len(raw) != DATA_SIZE:
+                continue
 
-            if len(raw) == DATA_SIZE:
-                # unpack sensor data
-                acc_x, acc_y, acc_z, micros = struct.unpack(fmt, raw)
-                # create ROS message
-                msg = Vector3Stamped()
-                msg.header.stamp = convert_timestamp(micros)
-                msg.header.frame_id = "accelerometer_link"
-                msg.vector.x = acc_x
-                msg.vector.y = acc_y
-                msg.vector.z = acc_z
-                pub.publish(msg)
-                # rate.sleep()
+            values = struct.unpack(fmt, raw)
+            micros = values[-1]
+            stamp = convert_timestamp(micros)
+
+            idx = 0
+            if READ_ACC:
+                acc_msg = Vector3Stamped()
+                acc_msg.header.stamp = stamp
+                acc_msg.header.frame_id = "accelerometer_link"
+                acc_msg.vector.x = values[idx]; idx += 1
+                acc_msg.vector.y = values[idx]; idx += 1
+                acc_msg.vector.z = values[idx]; idx += 1
+                pub_acc.publish(acc_msg)
+
+            if READ_GYRO:
+                gyro_msg = Vector3Stamped()
+                gyro_msg.header.stamp = stamp
+                gyro_msg.header.frame_id = "gyroscope_link"
+                gyro_msg.vector.x = values[idx]; idx += 1
+                gyro_msg.vector.y = values[idx]; idx += 1
+                gyro_msg.vector.z = values[idx]; idx += 1
+                pub_gyro.publish(gyro_msg)
 
         except Exception as e:
-            print(f"\n[ACC] Error: {e}")
+            print(f"\n[IMU] Error: {e}")
 
 
+# ENTRYPOINT
 if __name__ == "__main__":
     try:
         arduino = serial.Serial(ARDUINO_PORT, ARDUINO_BAUDRATE, timeout=0.01)
