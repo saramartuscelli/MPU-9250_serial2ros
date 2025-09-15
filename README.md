@@ -23,10 +23,22 @@ The goal is to provide a lightweight bridge between the MPU-9250 IMU and ROS, en
 1. Flash the Arduino sketch (`arduino/`) to your board.  
 2. Launch the Python ROS node:
    ```bash
+   # create a catkin package
+   cd ~/catkin_ws/src
+   catkin_create_pkg mpu9250_serial2ros rospy geometry_msgs
+   mkdir -p mpu9250_serial2ros/scripts
+   mv ~/Downloads/imu_publisher.py ~/catkin_ws/src/mpu9250_sensor2ros/scripts/
+   chmod +x ~/catkin_ws/src/mpu9250_sensor2ros/scripts/imu_publisher.py 
+   cd ~/catkin_ws
+   catkin build
+   source ~/catkin_ws/devel/setup.bash
+   # run with ROS1
+   roscore
    rosrun mpu9250_serial2ros imu_publisher.py
    ```
    or:
    ```bash
+   cd ~/Downloads/
    python3 imu_publisher.py
    ```
 
